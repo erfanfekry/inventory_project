@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework import generics
 from .services import InventoryService
 from .exceptions import InsufficientInventoryError
 from .serializers import (ProductSerializer,
@@ -8,6 +9,11 @@ from .models import Product
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import status
 from rest_framework.views import Response
+
+
+class ProductCreateAPIView(generics.CreateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
 
 class ProductIncreaseAPIView(APIView):
@@ -27,32 +33,32 @@ class ProductIncreaseAPIView(APIView):
         )
 
 
-    class ProductDecreaseAPIView(APIView):
+class ProductDecreaseAPIView(APIView):
 
-        def post(self, request, pk):
-            serializer = InventoryChangeSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+    def post(self, request, pk):
+        serializer = InventoryChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-            try:
-                product = InventoryService.decrease(
-                    product_id=pk,
-                    amount=serializer.validated_data["quantity"],
-                )
-            except InsufficientInventoryError as exc:
-                return Response(
-                    {
-                        "error": {
-                            "code": "INSUFFICIENT_INVENTORY",
-                            "message": str(exc),
-                        }
-                    },
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            return Response(
-                ProductSerializer(product).data,
-                status=status.HTTP_200_OK,
+        try:
+            product = InventoryService.decrease(
+                product_id=pk,
+                amount=serializer.validated_data["quantity"],
             )
+        except InsufficientInventoryError as exc:
+            return Response(
+                {
+                    "error": {
+                        "code": "INSUFFICIENT_INVENTORY",
+                        "message": str(exc),
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            ProductSerializer(product).data,
+            status=status.HTTP_200_OK,
+        )
 
 class ProductHistoryAPIView(APIView):
 
