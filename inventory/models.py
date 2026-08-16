@@ -19,3 +19,11 @@ class InventoryTransaction(models.Model):
     previous_quantity = models.PositiveIntegerField()
     new_quantity = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="transaction_quantity_positive",
+            ),
+        ]
